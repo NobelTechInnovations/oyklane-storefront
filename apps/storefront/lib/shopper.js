@@ -38,7 +38,7 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 // so the API isn't asked on every page.
 export const OYKLANE_ID_COOKIE = "oy_id";
 export const OYKLANE_MISS_COOKIE = "sc_oy_miss";
-const ID_MAX_AGE = 60 * 60 * 24 * 90;
+const ID_MAX_AGE = 60 * 60 * 24 * 30; // 30 days, like the session
 const MISS_MAX_AGE = 6 * 60 * 60;
 
 function cookiePath(request, handle) {

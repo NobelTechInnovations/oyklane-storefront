@@ -10,6 +10,9 @@ import {
   LOGIN_EMAIL_COOKIE,
   PHONE_TICKET_COOKIE,
   PHONE_PROFILE_COOKIE,
+  OYKLANE_ID_COOKIE,
+  oyklaneSignIn,
+  clearOyklaneId,
 } from "@/lib/shopper";
 
 /**
@@ -22,6 +25,9 @@ import {
  * and, when a phone code can't be sent, sign-in by an emailed code:
  *   { action: "email-send", email }      → { email }
  *   { action: "email-verify", code }     → { done }
+ * and "signed in on another Oyklane store?" (the shared Oyklane account):
+ *   { action: "known" }                  → { known: { name, phone } | null }
+ *   { action: "continue" }               → { done }
  * The number, the "number verified" ticket and the profile live in
  * HttpOnly cookies between steps (never in the page); { done } means the
  * session cookie is set.
@@ -49,6 +55,22 @@ export async function POST(request, { params }) {
     for (const name of STEP_COOKIES) clearCookie(response, request, handle, name);
     return response;
   };
+
+  // Signed in on another *.oyklane.com store: its Oyklane account cookie is
+  // shared, so offer "Continue as …" (masked number) and sign in on a click.
+  if (body.action === "known") {
+    const idToken = jar.get(OYKLANE_ID_COOKIE)?.value;
+    if (!idToken) return NextResponse.json({ known: null });
+    const res = await apiPost(handle, "/account/oyklane/peek", { idToken });
+    return NextResponse.json({ known: res.ok && res.data?.known ? { name: res.data.name || "", phone: res.data.phone || "" } : null });
+  }
+  if (body.action === "continue") {
+    const result = await oyklaneSignIn(request, handle, { create: true });
+    if (result?.token) return done(result.token);
+    const response = fail("Please sign in with your number.");
+    if (result?.clear) clearOyklaneId(response, request);
+    return response;
+  }
 
   // One-tap sign-in: a one-time code from Oyklane's sign-in (another store,
   // or this phone code checked there) becomes this store's session.

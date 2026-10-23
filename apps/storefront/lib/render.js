@@ -1,7 +1,11 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { isDomainRequest } from "./domain";
-import { oyklaneSignIn, applyOyklane, userNavigated, OYKLANE_WELCOME } from "./shopper";
+import { oyklaneSignIn, applyOyklane, userNavigated, OYKLANE_WELCOME, OYKLANE_ID_COOKIE, setOyklaneId, apiPost, cookieOptions } from "./shopper";
+
+// Signed in, but the shopper's account can't travel (nothing proven yet):
+// don't ask again for a while.
+const NO_ID_COOKIE = "sc_oy_noid";
 
 import { API_URL } from "@/lib/api-url";
 export const CART_COOKIE = "sc_cart_id";
@@ -89,6 +93,14 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
         ? await oyklaneSignIn(request, handle, { create: ACCOUNT_PAGES.has(template) && userNavigated(request) })
         : null;
   if (oyklane?.token) shopperSession = oyklane.token;
+  // Signed in here without the shared Oyklane account cookie (signed in
+  // before it existed, or by a route that didn't set it): add it now, so
+  // this shopper's other Oyklane stores can offer "Continue as …".
+  let freshId = null;
+  if (request && shopperSession && !oyklane && !cookieStore.get(OYKLANE_ID_COOKIE)?.value && !cookieStore.get(NO_ID_COOKIE)?.value) {
+    const res = await apiPost(handle, "/account/oyklane/issue", {}, { token: shopperSession });
+    if (res.ok) freshId = res.data?.idToken || "";
+  }
 
   const params = new URLSearchParams(extraParams);
   let previewTheme = null;
@@ -167,6 +179,8 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
     headers: { "content-type": "text/html; charset=utf-8" },
   });
   if (request) applyOyklane(response, request, handle, oyklane);
+  if (request && freshId) setOyklaneId(response, request, freshId);
+  if (request && freshId === "") response.cookies.set(NO_ID_COOKIE, "1", cookieOptions(request, handle, 6 * 60 * 60));
   // Session cookie: a preview never outlives the browser.
   if (previewChange === "set") response.headers.append("set-cookie", `${PREVIEW_COOKIE}=${previewTheme}; Path=/; HttpOnly; SameSite=Lax`);
   if (previewChange === "exit") response.headers.append("set-cookie", `${PREVIEW_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
