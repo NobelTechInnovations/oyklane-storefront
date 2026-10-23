@@ -1,0 +1,13 @@
+{
+  "name": "oyklane-storefront",
+  "private": true,
+  "engines": {
+    "node": ">=20 <=24"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "dev": "pnpm --filter @shopcycle/storefront dev",
+    "build": "pnpm --filter @shopcycle/storefront build",
+    "start": "pnpm --filter @shopcycle/storefront start"
+  }
+}
