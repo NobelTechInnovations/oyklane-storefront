@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { apiPost, visitorAllowed, shopperToken, setShopperCookie, cookieOptions, PHONE_TICKET_COOKIE } from "@/lib/shopper";
+import { CART_COOKIE, VISITOR_COOKIE } from "@/lib/render";
 
 /**
  * The One-Click Checkout popup's calls, same-origin so they work on a
@@ -22,6 +24,9 @@ export async function POST(request, { params }) {
     /* ignore */
   }
   const phone = typeof body.phone === "string" ? body.phone.slice(0, 24) : "";
+  // Which visit and cart this is (Siyaa ties them to the shopper).
+  const jar = await cookies();
+  const visit = { cartId: jar.get(CART_COOKIE)?.value || undefined, visitorId: jar.get(VISITOR_COOKIE)?.value || undefined };
 
   if (body.action === "code") {
     if (!visitorAllowed(request, `express-code:${handle}`, { max: 6, windowMs: 10 * 60 * 1000 })) {
@@ -33,7 +38,7 @@ export async function POST(request, { params }) {
 
   if (body.action === "verify") {
     const code = typeof body.code === "string" ? body.code.slice(0, 12) : "";
-    const res = await apiPost(handle, "/checkout/express/verify", { phone, code });
+    const res = await apiPost(handle, "/checkout/express/verify", { phone, code, ...visit });
     if (!res.ok) return NextResponse.json(res.data || {}, { status: res.status });
     const { token, ticket, oyklaneId, ...data } = res.data || {};
     const response = NextResponse.json(data);
@@ -45,7 +50,7 @@ export async function POST(request, { params }) {
   if (body.action === "mine") {
     const token = await shopperToken();
     if (!token) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-    const res = await apiPost(handle, "/checkout/express/mine", {}, { token });
+    const res = await apiPost(handle, "/checkout/express/mine", visit, { token });
     return NextResponse.json(res.data || {}, { status: res.status });
   }
 

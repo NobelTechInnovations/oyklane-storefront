@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { API_URL, CART_COOKIE } from "./render";
+import { API_URL, CART_COOKIE, VISITOR_COOKIE } from "./render";
 import { storefrontPath } from "./domain";
 
 const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
@@ -78,7 +78,8 @@ export async function mutateCart(handle, endpoint, request) {
   const res = await fetch(`${API_URL}/api/storefront/${handle}/cart/${endpoint}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ cartId, variantId: variantId || undefined, quantity, ...extra }),
+    // The visit, so Siyaa knows whose cart this is (add_to_cart events).
+    body: JSON.stringify({ cartId, variantId: variantId || undefined, quantity, visitorId: cookieStore.get(VISITOR_COOKIE)?.value || undefined, ...extra }),
   });
 
   let cart = null;
@@ -145,6 +146,13 @@ async function mutateCartCode(handle, endpoint, request, errorParam, fallbackErr
     body = await res.json();
   } catch {
     /* non-JSON error body — fall through with body still null */
+  }
+
+  // One-Click Checkout applies codes in place: JSON back, no redirect.
+  if (wantsJson(request)) {
+    const response = NextResponse.json(res.ok ? { cart: publicCart(body?.cart, request, handle) } : { error: body?.error || fallbackError }, { status: res.ok ? 200 : res.status });
+    if (body?.cart?.cartId) setCartCookie(response, body.cart.cartId);
+    return response;
   }
 
   const target = new URL(storefrontPath(request.headers.get("host"), handle, back), request.url);
