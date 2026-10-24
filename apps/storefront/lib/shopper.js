@@ -124,7 +124,7 @@ export function applyOyklane(response, request, handle, result) {
 }
 
 /** The notice shown when the Oyklane account made an account here. */
-export const OYKLANE_WELCOME = "You're signed in with your Oyklane account — the same sign-in works on every Oyklane store. Not you? Sign out below.";
+export const OYKLANE_WELCOME = "You're signed in. Not you? Sign out below.";
 
 export function clearCookie(response, request, handle, name) {
   response.cookies.set(name, "", cookieOptions(request, handle, 0));
