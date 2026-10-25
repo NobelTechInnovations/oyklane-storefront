@@ -135,9 +135,11 @@ async function mutateCartCode(handle, endpoint, request, errorParam, fallbackErr
   const code = form.get("code");
   const back = BACK_TARGETS[String(form.get("back") || "")] || "/cart";
 
+  // Signed in: who's applying it (a personal offer only works for its buyer).
+  const token = cookieStore.get("sc_customer")?.value;
   const res = await fetch(`${API_URL}/api/storefront/${handle}/cart/${endpoint}`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...(token && { "x-shopper-token": token }) },
     body: JSON.stringify({ cartId, ...(code ? { code } : {}) }),
   });
 

@@ -140,7 +140,8 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
     const get = () =>
       fetch(`${API_URL}/api/storefront/${handle}/render/${template}?${params}`, {
         cache: "no-store",
-        headers: shopperSession ? { "x-shopper-token": shopperSession } : {},
+        // Signed-in shopper, and a locked store's unlock token (password route).
+        headers: { ...(shopperSession && { "x-shopper-token": shopperSession }), ...(cookieStore.get("sc_unlock")?.value && { "x-store-unlock": cookieStore.get("sc_unlock").value }) },
       });
     res = await get();
     // A remembered preview whose theme is gone: back to the live theme.
