@@ -12,7 +12,7 @@ export async function GET(request, { params }) {
   return proxyRender(handle, "upi-pay", { orderId }, request);
 }
 
-/** "I've paid" (with the UPI reference) or "Show a new QR". */
+/** "I've paid" or "Show a new QR". */
 export async function POST(request, { params }) {
   const { handle } = await params;
   const form = await request.formData();
@@ -25,10 +25,10 @@ export async function POST(request, { params }) {
     await apiPost(handle, `/checkout/upi/${orderId}/renew`, { cartId });
     return back();
   }
-  const res = await apiPost(handle, `/checkout/upi/${orderId}/submit`, { cartId, utr: String(form.get("utr") || "") });
+  const res = await apiPost(handle, `/checkout/upi/${orderId}/submit`, { cartId });
   if (!res.ok) {
     const details = res.data?.details && Object.values(res.data.details).flat().find((m) => typeof m === "string");
-    return back({ formError: details || res.data?.error || "That didn't go through. Check the reference and try again." });
+    return back({ formError: details || res.data?.error || "That didn't go through. Please try again." });
   }
   // The order is placed: the cart is done (as after cash on delivery).
   const response = redirectTo(request, handle, "/checkout/confirmation", { order: orderId });
