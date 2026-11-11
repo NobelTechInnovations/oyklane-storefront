@@ -1,3 +1,4 @@
+import { finishCart } from "@/lib/cart-actions";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_URL, CART_COOKIE } from "@/lib/render";
@@ -51,7 +52,7 @@ export async function GET(request, { params }) {
     const url = new URL(storefrontPath(host, handle, "/checkout/confirmation"), request.url);
     url.searchParams.set("order", orderId);
     const response = NextResponse.redirect(url, { status: 303 });
-    response.cookies.set(CART_COOKIE, "", { path: "/", maxAge: 0 });
+    await finishCart(response);
     response.cookies.set(ONE_CLICK_RETURN_COOKIE, "", { path: "/", maxAge: 0 });
     return response;
   }

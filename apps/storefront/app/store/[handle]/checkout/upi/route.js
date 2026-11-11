@@ -1,3 +1,4 @@
+import { finishCart } from "@/lib/cart-actions";
 import { cookies } from "next/headers";
 import { proxyRender, CART_COOKIE } from "@/lib/render";
 import { apiPost, redirectTo } from "@/lib/shopper";
@@ -32,6 +33,6 @@ export async function POST(request, { params }) {
   }
   // The order is placed: the cart is done (as after cash on delivery).
   const response = redirectTo(request, handle, "/checkout/confirmation", { order: orderId });
-  response.cookies.set(CART_COOKIE, "", { path: "/", maxAge: 0 });
+  await finishCart(response);
   return response;
 }

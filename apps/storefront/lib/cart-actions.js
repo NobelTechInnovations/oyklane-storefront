@@ -56,6 +56,24 @@ export function setCartCookie(response, cartId) {
   response.cookies.set(CART_COOKIE, cartId, { path: "/", httpOnly: true, sameSite: "lax", maxAge: CART_COOKIE_MAX_AGE });
 }
 
+/** Bundles app: while a bundle box is being checked out on its own cart,
+ * the shopper's own cart id waits here ("-" for none). Adding anything
+ * else, or finishing the order, brings it back. */
+export const PARKED_COOKIE = "sc_cart_parked";
+
+export function parkCart(response, current) {
+  response.cookies.set(PARKED_COOKIE, current || "-", { path: "/", httpOnly: true, sameSite: "lax", maxAge: CART_COOKIE_MAX_AGE });
+}
+
+/** An order is placed: the cart's job is done. The shopper's own cart
+ * comes back if a bundle checkout had set it aside. */
+export async function finishCart(response) {
+  const parked = (await cookies()).get(PARKED_COOKIE)?.value;
+  if (parked && parked !== "-") setCartCookie(response, parked);
+  else response.cookies.set(CART_COOKIE, "", { path: "/", maxAge: 0 });
+  if (parked) response.cookies.set(PARKED_COOKIE, "", { path: "/", maxAge: 0 });
+}
+
 /** Shared by the add/update route handlers: read the cart cookie, POST the
  * mutation to the API, redirect back (303 — the standard POST/redirect/GET
  * pattern, so a page refresh after add-to-cart doesn't resubmit the form),
@@ -63,7 +81,14 @@ export function setCartCookie(response, cartId) {
  * for JSON instead and gets the updated cart back. */
 export async function mutateCart(handle, endpoint, request) {
   const cookieStore = await cookies();
-  const cartId = cookieStore.get(CART_COOKIE)?.value;
+  // Adding something while a bundle box is being checked out goes back to
+  // the shopper's own cart (the box stays a box of its own).
+  const parked = endpoint === "add" ? cookieStore.get(PARKED_COOKIE)?.value : null;
+  const cartId = parked ? (parked === "-" ? undefined : parked) : cookieStore.get(CART_COOKIE)?.value;
+  const unpark = (response) => {
+    if (parked && cart?.cartId) response.cookies.set(PARKED_COOKIE, "", { path: "/", maxAge: 0 });
+    return response;
+  };
 
   const form = await request.formData();
   const variantId = form.get("variantId");
@@ -97,7 +122,7 @@ export async function mutateCart(handle, endpoint, request) {
       status: res.ok ? 200 : res.status,
     });
     if (cart?.cartId) setCartCookie(response, cart.cartId);
-    return response;
+    return unpark(response);
   }
 
   // Without JavaScript, a refused add (a rental without dates, dates that
@@ -117,7 +142,7 @@ export async function mutateCart(handle, endpoint, request) {
       maxAge: CART_COOKIE_MAX_AGE,
     });
   }
-  return response;
+  return unpark(response);
 }
 
 // Where a code form may send the shopper back to.

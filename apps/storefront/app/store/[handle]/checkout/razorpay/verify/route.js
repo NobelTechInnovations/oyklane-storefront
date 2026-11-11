@@ -1,4 +1,6 @@
+import { finishCart } from "@/lib/cart-actions";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { API_URL, CART_COOKIE } from "@/lib/render";
 
 /** Called by the client-side Razorpay handler (checkout/pay/page.jsx) —
@@ -15,10 +17,10 @@ export async function POST(request) {
     body: JSON.stringify({ ...body, ...(cartId && { cartId }) }),
   });
   const text = await res.text();
-  const response = new Response(text, {
+  const response = new NextResponse(text, {
     status: res.status,
     headers: { "content-type": "application/json" },
   });
-  if (res.ok) response.headers.append("set-cookie", `${CART_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
+  if (res.ok) await finishCart(response);
   return response;
 }

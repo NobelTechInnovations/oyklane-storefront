@@ -1,3 +1,4 @@
+import { finishCart } from "@/lib/cart-actions";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { proxyRender, API_URL, CART_COOKIE, VISITOR_COOKIE } from "@/lib/render";
@@ -132,6 +133,6 @@ export async function POST(request, { params }) {
   // cart's job is done, clear its cookie too so a shopper who navigates
   // back to the cart sees it empty rather than a cart the server has
   // already discarded.
-  response.cookies.set(CART_COOKIE, "", { path: "/", maxAge: 0 });
+  await finishCart(response);
   return response;
 }
