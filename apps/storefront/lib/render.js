@@ -141,7 +141,18 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
       fetch(`${API_URL}/api/storefront/${handle}/render/${template}?${params}`, {
         cache: "no-store",
         // Signed-in shopper, and a locked store's unlock token (password route).
-        headers: { ...(shopperSession && { "x-shopper-token": shopperSession }), ...(cookieStore.get("sc_unlock")?.value && { "x-store-unlock": cookieStore.get("sc_unlock").value }) },
+        headers: {
+          ...(shopperSession && { "x-shopper-token": shopperSession }),
+          ...(cookieStore.get("sc_unlock")?.value && { "x-store-unlock": cookieStore.get("sc_unlock").value }),
+          // The shopper's own browser, referrer and country, for Analytics
+          // (and to leave crawlers and link previews out of it).
+          ...(request && {
+            "x-oy-ua": (request.headers.get("user-agent") || "").slice(0, 400),
+            "x-oy-referer": (request.headers.get("referer") || "").slice(0, 500),
+            "x-oy-country": request.headers.get("x-vercel-ip-country") || "",
+            "x-oy-purpose": /prefetch/i.test(`${request.headers.get("purpose") || ""} ${request.headers.get("sec-purpose") || ""} ${request.headers.get("next-router-prefetch") || ""}`) ? "prefetch" : "",
+          }),
+        },
       });
     res = await get();
     // A remembered preview whose theme is gone: back to the live theme.
