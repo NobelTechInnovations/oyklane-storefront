@@ -150,6 +150,9 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
             "x-oy-ua": (request.headers.get("user-agent") || "").slice(0, 400),
             "x-oy-referer": (request.headers.get("referer") || "").slice(0, 500),
             "x-oy-country": request.headers.get("x-vercel-ip-country") || "",
+            // Vercel sends the city URL-encoded ("New%20Delhi").
+            "x-oy-city": (request.headers.get("x-vercel-ip-city") || "").slice(0, 80),
+            "x-oy-region": (request.headers.get("x-vercel-ip-country-region") || "").slice(0, 10),
             "x-oy-purpose": /prefetch/i.test(`${request.headers.get("purpose") || ""} ${request.headers.get("sec-purpose") || ""} ${request.headers.get("next-router-prefetch") || ""}`) ? "prefetch" : "",
           }),
         },
