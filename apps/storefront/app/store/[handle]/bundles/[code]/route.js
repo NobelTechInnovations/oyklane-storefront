@@ -26,6 +26,17 @@ export async function POST(request, { params }) {
   } catch {
     /* empty body → the API says what's missing */
   }
+  // The One-Click popup closed without an order: back to their own cart.
+  if (body.leave) {
+    const parked = (await cookies()).get(PARKED_COOKIE)?.value;
+    const response = NextResponse.json({ ok: true });
+    if (parked) {
+      if (parked === "-") response.cookies.set(CART_COOKIE, "", { path: "/", maxAge: 0 });
+      else setCartCookie(response, parked);
+      response.cookies.set(PARKED_COOKIE, "", { path: "/", maxAge: 0 });
+    }
+    return response;
+  }
   const res = await apiPost(handle, `/bundles/${encodeURIComponent(String(code).slice(0, 40))}/cart`, { items: Array.isArray(body.items) ? body.items.slice(0, 20) : [] });
   const cartId = res.data?.cart?.cartId;
   if (!res.ok || !cartId) return NextResponse.json({ error: res.data?.error || "Your box couldn't be checked out. Please try again." }, { status: res.ok ? 502 : res.status });
