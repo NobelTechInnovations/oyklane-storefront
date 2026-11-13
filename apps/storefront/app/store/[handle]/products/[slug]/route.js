@@ -7,7 +7,7 @@ export async function GET(request, { params }) {
   return proxyRender(
     handle,
     "product",
-    { slug, ...(themeId && { themeId }), ...(sp.get("variant") && { variant: sp.get("variant") }) },
+    { slug, ...(themeId && { themeId }), ...(sp.get("variant") && { variant: sp.get("variant") }), ...(sp.get("ds") && { ds: sp.get("ds").slice(0, 16) }) },
     request
   );
 }
