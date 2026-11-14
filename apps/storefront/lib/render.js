@@ -153,6 +153,8 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
             // Vercel sends the city URL-encoded ("New%20Delhi").
             "x-oy-city": (request.headers.get("x-vercel-ip-city") || "").slice(0, 80),
             "x-oy-region": (request.headers.get("x-vercel-ip-country-region") || "").slice(0, 10),
+            // The visitor's address, for Deal Share's fake-friend checks (the API keeps only a hash).
+            "x-oy-ip": (request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "").split(",")[0].trim().slice(0, 64),
             "x-oy-purpose": /prefetch/i.test(`${request.headers.get("purpose") || ""} ${request.headers.get("sec-purpose") || ""} ${request.headers.get("next-router-prefetch") || ""}`) ? "prefetch" : "",
           }),
         },

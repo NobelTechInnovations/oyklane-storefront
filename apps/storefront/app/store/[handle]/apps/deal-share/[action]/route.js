@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { apiPost, visitorAllowed } from "@/lib/shopper";
+import { VISITOR_COOKIE } from "@/lib/render";
 
 /** Deal Share app (product page): "Share & save" makes the shopper's own
  * link (join); "Use my points" makes their personal discount (redeem).
@@ -17,8 +18,12 @@ export async function POST(request, { params }) {
   } catch {
     /* empty */
   }
-  const token = (await cookies()).get("sc_customer")?.value;
+  const jar = await cookies();
+  const token = jar.get("sc_customer")?.value;
   if (!token) return NextResponse.json({ error: "Sign in first.", signIn: true }, { status: 401 });
-  const res = await apiPost(handle, `/apps/deal-share/${action}`, { dealId: String(body.dealId || "").slice(0, 40), via: body.via ? String(body.via).slice(0, 16) : undefined }, { token });
+  // The sharer's browser and address: a friend on the same device never
+  // counts (the API keeps only a hash of the address).
+  const ip = (request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "").split(",")[0].trim().slice(0, 64);
+  const res = await apiPost(handle, `/apps/deal-share/${action}`, { dealId: String(body.dealId || "").slice(0, 40), via: body.via ? String(body.via).slice(0, 16) : undefined, variantId: body.variantId ? String(body.variantId).slice(0, 40) : undefined, deviceId: jar.get(VISITOR_COOKIE)?.value || undefined, ip }, { token });
   return NextResponse.json(res.data || {}, { status: res.status || (res.ok ? 200 : 400) });
 }
