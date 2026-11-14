@@ -15,6 +15,11 @@ const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 // stable cross-visit "customer" (see analytics/service.js's 30-minute
 // staleness rule for what actually starts a new session server-side).
 export const VISITOR_COOKIE = "sc_visitor_id";
+// Deal Share: the shared link a visitor arrived on (?ds=CODE), kept until
+// they sign in on any page — then it counts for the sharer and is cleared.
+const DS_COOKIE = "sc_ds";
+const DS_MAX_AGE = 60 * 60 * 24 * 7;
+const DS_CODE = /^[A-Za-z0-9]{5,12}$/;
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const UTM_PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"];
@@ -143,6 +148,8 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
         // Signed-in shopper, and a locked store's unlock token (password route).
         headers: {
           ...(shopperSession && { "x-shopper-token": shopperSession }),
+          // A shared link opened earlier, before signing in (Deal Share).
+          ...(shopperSession && DS_CODE.test(cookieStore.get(DS_COOKIE)?.value || "") && { "x-oy-ds": cookieStore.get(DS_COOKIE).value }),
           ...(cookieStore.get("sc_unlock")?.value && { "x-store-unlock": cookieStore.get("sc_unlock").value }),
           // The shopper's own browser, referrer and country, for Analytics
           // (and to leave crawlers and link previews out of it).
@@ -206,6 +213,13 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
       "set-cookie",
       `${CART_COOKIE}=${newCartId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${CART_COOKIE_MAX_AGE}`
     );
+  }
+  // Deal Share: remember a shared link until the visitor signs in; the API
+  // says when it has been counted (or can't be), and it's dropped.
+  if (request) {
+    const dsHere = request.nextUrl.searchParams.get("ds");
+    if (DS_CODE.test(dsHere || "") && !res.headers.get("x-ds-done")) response.cookies.set(DS_COOKIE, dsHere.toUpperCase(), cookieOptions(request, handle, DS_MAX_AGE));
+    else if (res.headers.get("x-ds-done") && cookieStore.get(DS_COOKIE)) response.cookies.set(DS_COOKIE, "", cookieOptions(request, handle, 0));
   }
   if (newVisitorId && newVisitorId !== visitorId) {
     response.headers.append(
