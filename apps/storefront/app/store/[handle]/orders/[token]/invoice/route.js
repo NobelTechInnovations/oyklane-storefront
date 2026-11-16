@@ -1,11 +1,12 @@
 import { API_URL } from "@/lib/render";
+import { apiFetch } from "@/lib/api-url";
 
 /** The order's GST invoice as a printable page. */
 export async function GET(request, { params }) {
   const { handle, token } = await params;
   let res;
   try {
-    res = await fetch(`${API_URL}/api/storefront/${handle}/orders/${encodeURIComponent(token)}/invoice`, { cache: "no-store" });
+    res = await apiFetch(`${API_URL}/api/storefront/${handle}/orders/${encodeURIComponent(token)}/invoice`, { cache: "no-store" });
   } catch {
     return new Response("The store is unavailable right now.", { status: 503 });
   }

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { API_URL } from "./api-url";
+import { API_URL, apiFetch } from "./api-url";
 import { storefrontPath, isDomainRequest, ROOT_DOMAIN } from "./domain";
 
 /**
@@ -158,7 +158,7 @@ export function signedInResponse(request, handle, token, target, idToken) {
 export async function apiPost(handle, path, body, { token } = {}) {
   let res;
   try {
-    res = await fetch(`${API_URL}/api/storefront/${handle}${path}`, {
+    res = await apiFetch(`${API_URL}/api/storefront/${handle}${path}`, {
       method: "POST",
       headers: { "content-type": "application/json", ...(token && { "x-shopper-token": token }) },
       body: JSON.stringify(body),

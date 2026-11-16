@@ -2,6 +2,7 @@ import { finishCart } from "@/lib/cart-actions";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { proxyRender, API_URL, CART_COOKIE, VISITOR_COOKIE } from "@/lib/render";
+import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 import { shopperToken, setShopperCookie, clearCookie, PHONE_TICKET_COOKIE } from "@/lib/shopper";
 import { storeBase, gatewayHandoff, safeReturnPath, retryUrl, ONE_CLICK_RETURN_COOKIE } from "@/lib/payments";
@@ -59,7 +60,7 @@ export async function POST(request, { params }) {
   };
 
   const token = await shopperToken();
-  const res = await fetch(`${API_URL}/api/storefront/${handle}/checkout`, {
+  const res = await apiFetch(`${API_URL}/api/storefront/${handle}/checkout`, {
     method: "POST",
     headers: { "content-type": "application/json", ...(token && { "x-shopper-token": token }) },
     body: JSON.stringify(body),

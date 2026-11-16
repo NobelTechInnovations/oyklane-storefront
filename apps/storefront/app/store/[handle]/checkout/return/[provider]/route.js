@@ -2,6 +2,7 @@ import { finishCart } from "@/lib/cart-actions";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_URL, CART_COOKIE } from "@/lib/render";
+import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 import { retryUrl, safeReturnPath, ONE_CLICK_RETURN_COOKIE } from "@/lib/payments";
 
@@ -20,7 +21,7 @@ import { retryUrl, safeReturnPath, ONE_CLICK_RETURN_COOKIE } from "@/lib/payment
  */
 async function confirm(handle, provider, orderId, params, cartId) {
   try {
-    const res = await fetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/checkout/payments/${encodeURIComponent(provider)}/confirm`, {
+    const res = await apiFetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/checkout/payments/${encodeURIComponent(provider)}/confirm`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orderId, params, cartId }),

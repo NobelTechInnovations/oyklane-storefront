@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_URL, CART_COOKIE, VISITOR_COOKIE } from "./render";
+import { apiFetch } from "./api-url";
 import { storefrontPath } from "./domain";
 
 const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
@@ -100,7 +101,7 @@ export async function mutateCart(handle, endpoint, request) {
     if (typeof value === "string" && value) extra[name] = value.slice(0, 200);
   }
 
-  const res = await fetch(`${API_URL}/api/storefront/${handle}/cart/${endpoint}`, {
+  const res = await apiFetch(`${API_URL}/api/storefront/${handle}/cart/${endpoint}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     // The visit, so Siyaa knows whose cart this is (add_to_cart events).
@@ -162,7 +163,7 @@ async function mutateCartCode(handle, endpoint, request, errorParam, fallbackErr
 
   // Signed in: who's applying it (a personal offer only works for its buyer).
   const token = cookieStore.get("sc_customer")?.value;
-  const res = await fetch(`${API_URL}/api/storefront/${handle}/cart/${endpoint}`, {
+  const res = await apiFetch(`${API_URL}/api/storefront/${handle}/cart/${endpoint}`, {
     method: "POST",
     headers: { "content-type": "application/json", ...(token && { "x-shopper-token": token }) },
     body: JSON.stringify({ cartId, ...(code ? { code } : {}) }),

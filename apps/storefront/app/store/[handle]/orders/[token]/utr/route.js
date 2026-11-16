@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { API_URL } from "@/lib/render";
+import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 
 /**
@@ -21,7 +22,7 @@ export async function POST(request, { params }) {
   let res = null;
   let result = null;
   try {
-    res = await fetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/orders/${encodeURIComponent(token)}/upi-utr`, {
+    res = await apiFetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/orders/${encodeURIComponent(token)}/upi-utr`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ utr }),

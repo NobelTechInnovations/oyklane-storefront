@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isPlatformHost, subdomainHandle, ROOT_DOMAIN } from "@/lib/domain";
 
-import { API_URL } from "@/lib/api-url";
+import { API_URL, apiFetch } from "@/lib/api-url";
 
 /**
  * Every store gets two ways in, resolved here with zero awareness needed
@@ -55,7 +55,7 @@ export async function proxy(request) {
     let target = `https://${ROOT_DOMAIN}`;
     if (token) {
       try {
-        const res = await fetch(`${API_URL}/api/links/${encodeURIComponent(token)}`, { cache: "no-store" });
+        const res = await apiFetch(`${API_URL}/api/links/${encodeURIComponent(token)}`, { cache: "no-store" });
         if (res.ok) target = (await res.json()).url || target;
       } catch {
         /* the main site */
@@ -77,7 +77,7 @@ export async function proxy(request) {
   if (handle) {
     const primary = await cached(primaryCache, handle, async () => {
       try {
-        const res = await fetch(`${API_URL}/api/storefront/primary-domain?handle=${encodeURIComponent(handle)}`, { cache: "no-store" });
+        const res = await apiFetch(`${API_URL}/api/storefront/primary-domain?handle=${encodeURIComponent(handle)}`, { cache: "no-store" });
         return res.ok ? (await res.json()).domain : null;
       } catch {
         return null;
@@ -92,7 +92,7 @@ export async function proxy(request) {
 
   const resolved = await cached(resolveCache, host, async () => {
     try {
-      const res = await fetch(`${API_URL}/api/storefront/resolve-domain?domain=${encodeURIComponent(host)}`, { cache: "no-store" });
+      const res = await apiFetch(`${API_URL}/api/storefront/resolve-domain?domain=${encodeURIComponent(host)}`, { cache: "no-store" });
       if (!res.ok) return null;
       return (await res.json()).handle || null;
     } catch {

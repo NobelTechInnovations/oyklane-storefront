@@ -1,4 +1,5 @@
 import { API_URL } from "./render";
+import { apiFetch } from "./api-url";
 
 /** Streams a file from the API through the storefront, so theme files,
  * platform assets and uploaded images load from the store's own address
@@ -7,7 +8,7 @@ import { API_URL } from "./render";
 export async function passthrough(path, { immutable = false } = {}) {
   let res;
   try {
-    res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+    res = await apiFetch(`${API_URL}${path}`, { cache: "no-store" });
   } catch {
     return new Response("Unavailable", { status: 503 });
   }

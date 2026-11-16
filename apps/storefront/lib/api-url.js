@@ -17,3 +17,17 @@ export function normalizeApiUrl(raw) {
 }
 
 export const API_URL = normalizeApiUrl(process.env.API_INTERNAL_URL);
+
+/**
+ * fetch to the API from the storefront's server. Adds the shared secret
+ * (STOREFRONT_API_SECRET, set to the same value here and on the API): with
+ * it set on the API, shopper-API calls without it — a script hitting cart,
+ * checkout or sign-in codes directly — are turned away. Empty: nothing sent.
+ */
+export function apiFetch(url, init = {}) {
+  const secret = process.env.STOREFRONT_API_SECRET;
+  if (!secret) return fetch(url, init);
+  const headers = new Headers(init.headers || {});
+  headers.set("x-storefront-secret", secret);
+  return fetch(url, { ...init, headers });
+}

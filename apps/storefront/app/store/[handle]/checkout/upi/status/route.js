@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_URL, CART_COOKIE } from "@/lib/render";
+import { apiFetch } from "@/lib/api-url";
 
 /** The UPI QR page's watcher: confirmed, reported, or timed out? */
 export async function GET(request, { params }) {
@@ -9,7 +10,7 @@ export async function GET(request, { params }) {
   if (!/^[a-z0-9]{10,40}$/i.test(orderId)) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const cartId = (await cookies()).get(CART_COOKIE)?.value || "";
   try {
-    const res = await fetch(`${API_URL}/api/storefront/${handle}/checkout/upi/${orderId}/status?cartId=${encodeURIComponent(cartId)}`, { cache: "no-store" });
+    const res = await apiFetch(`${API_URL}/api/storefront/${handle}/checkout/upi/${orderId}/status?cartId=${encodeURIComponent(cartId)}`, { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
     return NextResponse.json(data, { status: res.status, headers: { "cache-control": "no-store" } });
   } catch {

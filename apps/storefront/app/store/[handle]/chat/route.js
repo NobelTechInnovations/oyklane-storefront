@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_URL } from "@/lib/render";
+import { apiFetch } from "@/lib/api-url";
 
 /** The store's support chat bubble: questions go to the store's assistant,
  * "Talk to the store" becomes a ticket (Customers ▸ Queries). */
@@ -19,7 +20,7 @@ export async function POST(request, { params }) {
     body.action === "ticket"
       ? { name: String(body.name || "").slice(0, 80), email: String(body.email || "").slice(0, 200), phone: String(body.phone || "").slice(0, 24), message: String(body.message || "").slice(0, 5000) }
       : { messages: Array.isArray(body.messages) ? body.messages.slice(-10) : [], order: body.order || undefined };
-  const res = await fetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/${path}`, {
+  const res = await apiFetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/${path}`, {
     method: "POST",
     headers: { "content-type": "application/json", ...(token && { "x-shopper-token": token }), "x-forwarded-for": request.headers.get("x-forwarded-for") || "" },
     body: JSON.stringify(payload),

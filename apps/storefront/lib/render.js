@@ -7,7 +7,7 @@ import { oyklaneSignIn, applyOyklane, userNavigated, OYKLANE_WELCOME, OYKLANE_ID
 // don't ask again for a while.
 const NO_ID_COOKIE = "sc_oy_noid";
 
-import { API_URL } from "@/lib/api-url";
+import { API_URL, apiFetch } from "@/lib/api-url";
 export const CART_COOKIE = "sc_cart_id";
 const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
@@ -143,7 +143,7 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
   let res;
   try {
     const get = () =>
-      fetch(`${API_URL}/api/storefront/${handle}/render/${template}?${params}`, {
+      apiFetch(`${API_URL}/api/storefront/${handle}/render/${template}?${params}`, {
         cache: "no-store",
         // Signed-in shopper, and a locked store's unlock token (password route).
         headers: {

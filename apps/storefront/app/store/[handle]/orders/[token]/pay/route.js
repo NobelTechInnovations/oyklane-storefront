@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { API_URL } from "@/lib/render";
+import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 import { storeBase, gatewayHandoff } from "@/lib/payments";
 
@@ -21,7 +22,7 @@ export async function POST(request, { params }) {
   let result = null;
   let ok = false;
   try {
-    const res = await fetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/orders/${encodeURIComponent(token)}/pay-balance`, {
+    const res = await apiFetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/orders/${encodeURIComponent(token)}/pay-balance`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ returnBase: storeBase(request, handle) }),

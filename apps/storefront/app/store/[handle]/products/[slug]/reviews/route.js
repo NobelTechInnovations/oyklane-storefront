@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { API_URL } from "@/lib/api-url";
+import { API_URL, apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 
 /** More reviews for the product page (View more / loading on scroll),
@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
   const u = new URL(request.url);
   const offset = Math.max(0, parseInt(u.searchParams.get("offset") || "0", 10) || 0);
   try {
-    const res = await fetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/products/${encodeURIComponent(slug)}/reviews?offset=${offset}&limit=5`, { cache: "no-store" });
+    const res = await apiFetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/products/${encodeURIComponent(slug)}/reviews?offset=${offset}&limit=5`, { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
     return NextResponse.json(res.ok ? data : { items: [], hasMore: false }, { status: res.ok ? 200 : res.status, headers: { "cache-control": "no-store" } });
   } catch {
@@ -26,7 +26,7 @@ export async function POST(request, { params }) {
   let message = null;
   let ok = false;
   try {
-    const res = await fetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/products/${encodeURIComponent(slug)}/reviews`, {
+    const res = await apiFetch(`${API_URL}/api/storefront/${encodeURIComponent(handle)}/products/${encodeURIComponent(slug)}/reviews`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),

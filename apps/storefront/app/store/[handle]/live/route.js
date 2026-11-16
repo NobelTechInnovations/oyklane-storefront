@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_URL, VISITOR_COOKIE } from "@/lib/render";
+import { apiFetch } from "@/lib/api-url";
 
 /** Live view check-in from an open store tab (every 45s while visible):
  * the visit, the page, whether One-Click Checkout is open, who they are if
@@ -18,7 +19,7 @@ export async function POST(request, { params }) {
     /* ignore */
   }
   const token = jar.get("sc_customer")?.value;
-  await fetch(`${API_URL}/api/storefront/${handle}/live`, {
+  await apiFetch(`${API_URL}/api/storefront/${handle}/live`, {
     method: "POST",
     headers: { "content-type": "application/json", ...(token && { "x-shopper-token": token }) },
     body: JSON.stringify({ visitorId, path: typeof body.path === "string" ? body.path.slice(0, 300) : null, checkout: Boolean(body.checkout), human: body.human === true, ua: request.headers.get("user-agent") || "" }),
