@@ -29,6 +29,9 @@ const UTM_PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm
 // around, ?themeId=exit ends it. The API only renders a theme that
 // belongs to this store.
 const PREVIEW_COOKIE = "oy_preview_theme";
+// The shopper's pick from the currency switcher (Settings ▸ Markets), via ?currency=.
+const CURRENCY_COOKIE = "oy_currency";
+const CURRENCY = /^[A-Z]{3}$/;
 const THEME_ID = /^[a-z0-9]{10,40}$/i;
 
 /** The bar on a previewed page, and a script that keeps the preview on
@@ -140,6 +143,10 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
     if (isDomainRequest(request.headers.get("host"))) params.set("domainMode", "1");
   }
 
+  // ?currency=EUR from the switcher wins, then the remembered choice.
+  const pickedCurrency = request ? String(request.nextUrl.searchParams.get("currency") || "").toUpperCase() : "";
+  const shopperCurrency = CURRENCY.test(pickedCurrency) ? pickedCurrency : CURRENCY.test(cookieStore.get(CURRENCY_COOKIE)?.value || "") ? cookieStore.get(CURRENCY_COOKIE).value : "";
+
   let res;
   try {
     const get = () =>
@@ -157,6 +164,7 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
             "x-oy-ua": (request.headers.get("user-agent") || "").slice(0, 400),
             "x-oy-referer": (request.headers.get("referer") || "").slice(0, 500),
             "x-oy-country": request.headers.get("x-vercel-ip-country") || "",
+            ...(shopperCurrency && { "x-oy-currency": shopperCurrency }),
             // Vercel sends the city URL-encoded ("New%20Delhi").
             "x-oy-city": (request.headers.get("x-vercel-ip-city") || "").slice(0, 80),
             "x-oy-region": (request.headers.get("x-vercel-ip-country-region") || "").slice(0, 10),
@@ -206,6 +214,7 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
   if (request && freshId) setOyklaneId(response, request, freshId);
   if (request && freshId === "") response.cookies.set(NO_ID_COOKIE, "1", cookieOptions(request, handle, 6 * 60 * 60));
   // Session cookie: a preview never outlives the browser.
+  if (CURRENCY.test(pickedCurrency)) response.headers.append("set-cookie", `${CURRENCY_COOKIE}=${pickedCurrency}; Path=/; SameSite=Lax; Max-Age=31536000`);
   if (previewChange === "set") response.headers.append("set-cookie", `${PREVIEW_COOKIE}=${previewTheme}; Path=/; HttpOnly; SameSite=Lax`);
   if (previewChange === "exit") response.headers.append("set-cookie", `${PREVIEW_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
   if (newCartId && newCartId !== cartId) {
