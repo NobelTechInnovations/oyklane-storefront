@@ -175,6 +175,8 @@ export async function proxyRender(handle, template, extraParams = {}, request = 
             "x-oy-referer": (request.headers.get("referer") || "").slice(0, 500),
             "x-oy-country": request.headers.get("x-vercel-ip-country") || "",
             ...(shopperCurrency && { "x-oy-currency": shopperCurrency }),
+            // The shopper's language (proxy.js: /de/… or their last pick).
+            ...(request.headers.get("x-oy-lang") && { "x-oy-lang": request.headers.get("x-oy-lang") }),
             // Vercel sends the city URL-encoded ("New%20Delhi").
             "x-oy-city": (request.headers.get("x-vercel-ip-city") || "").slice(0, 80),
             "x-oy-region": (request.headers.get("x-vercel-ip-country-region") || "").slice(0, 10),

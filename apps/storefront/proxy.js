@@ -31,17 +31,45 @@ async function cached(map, key, load) {
   return value;
 }
 
+// Languages (Settings ▸ Markets and languages) live at /de/…, /fr/… on the
+// same address — so a shopper keeps one login and one cart. The prefix is
+// taken off here and passed on as x-oy-lang; without one, the shopper's
+// last pick (oy_lang cookie) is used.
+const LANG = /^\/(en|de|fr|ja|zh|ar|hi)(?=\/|$)/;
+function splitLang(path) {
+  const m = path.match(LANG);
+  return m ? { lang: m[1], rest: path.slice(m[0].length) } : { lang: null, rest: path };
+}
+function langHeaders(request, lang) {
+  const headers = new Headers(request.headers);
+  const pick = lang || request.cookies.get("oy_lang")?.value || "";
+  if (/^[a-z]{2}$/.test(pick)) headers.set("x-oy-lang", pick);
+  else headers.delete("x-oy-lang");
+  return headers;
+}
+
 function rewrite(request, handle, suffix) {
   const url = request.nextUrl.clone();
-  url.pathname = `/store/${handle}${suffix}`;
-  const response = NextResponse.rewrite(url);
+  const { lang, rest } = splitLang(suffix);
+  url.pathname = `/store/${handle}${rest}`;
+  const response = NextResponse.rewrite(url, { request: { headers: langHeaders(request, lang) } });
   response.headers.set("x-oyklane-store", handle);
   return response;
 }
 
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
-  if (pathname.startsWith("/store/")) return NextResponse.next();
+  if (pathname.startsWith("/store/")) {
+    // /store/{handle}/de/… (the platform address): same as on a domain.
+    const m = pathname.match(/^\/store\/([^/]+)(\/.*)?$/);
+    const { lang, rest } = splitLang(m?.[2] || "");
+    if (m && lang) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/store/${m[1]}${rest}`;
+      return NextResponse.rewrite(url, { request: { headers: langHeaders(request, lang) } });
+    }
+    return NextResponse.next({ request: { headers: langHeaders(request, null) } });
+  }
 
   const host = (request.headers.get("host") || "").split(":")[0].toLowerCase();
   if (isPlatformHost(host)) return NextResponse.next();
