@@ -37,6 +37,7 @@ export async function POST(request, { params }) {
     // The shopper's currency (switcher cookie): Stripe/PayPal charge in it
     // when the store shows it (Settings ▸ Markets).
     currency: /^[A-Z]{3}$/.test((await cookies()).get("oy_currency")?.value || "") ? (await cookies()).get("oy_currency").value : undefined,
+    lang: /^[a-z]{2}$/.test(request.headers.get("x-oy-lang") || "") ? request.headers.get("x-oy-lang") : undefined,
     gstin: form.get("gstin") || undefined,
     note: form.get("note") || undefined,
     shippingName: form.get("shippingName"),

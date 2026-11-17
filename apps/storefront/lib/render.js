@@ -40,6 +40,8 @@ export function moneyHeaders(request, cookieStore) {
   return {
     ...(CURRENCY.test(cur) && { "x-oy-currency": cur }),
     ...(request?.headers?.get("x-vercel-ip-country") && { "x-oy-country": request.headers.get("x-vercel-ip-country") }),
+    // The shopper's language (proxy.js): its currency when none was picked.
+    ...(request?.headers?.get("x-oy-lang") && { "x-oy-lang": request.headers.get("x-oy-lang") }),
   };
 }
 const THEME_ID = /^[a-z0-9]{10,40}$/i;
