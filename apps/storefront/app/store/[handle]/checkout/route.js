@@ -34,6 +34,9 @@ export async function POST(request, { params }) {
     phone: form.get("phone") || undefined,
     // Asked for only when the store turns them on (Settings ▸ Checkout).
     company: form.get("company") || undefined,
+    // The shopper's currency (switcher cookie): Stripe/PayPal charge in it
+    // when the store shows it (Settings ▸ Markets).
+    currency: /^[A-Z]{3}$/.test((await cookies()).get("oy_currency")?.value || "") ? (await cookies()).get("oy_currency").value : undefined,
     gstin: form.get("gstin") || undefined,
     note: form.get("note") || undefined,
     shippingName: form.get("shippingName"),

@@ -32,6 +32,16 @@ const PREVIEW_COOKIE = "oy_preview_theme";
 // The shopper's pick from the currency switcher (Settings ▸ Markets), via ?currency=.
 const CURRENCY_COOKIE = "oy_currency";
 const CURRENCY = /^[A-Z]{3}$/;
+
+/** The shopper's currency and country for cart calls (the drawer shows the
+ * cart priced the way the pages are). */
+export function moneyHeaders(request, cookieStore) {
+  const cur = cookieStore?.get(CURRENCY_COOKIE)?.value || "";
+  return {
+    ...(CURRENCY.test(cur) && { "x-oy-currency": cur }),
+    ...(request?.headers?.get("x-vercel-ip-country") && { "x-oy-country": request.headers.get("x-vercel-ip-country") }),
+  };
+}
 const THEME_ID = /^[a-z0-9]{10,40}$/i;
 
 /** The bar on a previewed page, and a script that keeps the preview on
