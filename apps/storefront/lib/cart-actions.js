@@ -96,7 +96,7 @@ export async function mutateCart(handle, endpoint, request) {
   const quantity = Number(form.get("quantity") || 1);
   // Which line (rentals share a variant), and a rental's dates and options.
   const extra = {};
-  for (const name of ["lineKey", "rentalStart", "rentalEnd", "rentalHandover", "rentalReturn"]) {
+  for (const name of ["lineKey", "rentalStart", "rentalEnd", "rentalHandover", "rentalReturn", "subscribe"]) {
     const value = form.get(name);
     if (typeof value === "string" && value) extra[name] = value.slice(0, 200);
   }
