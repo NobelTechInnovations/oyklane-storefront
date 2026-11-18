@@ -55,6 +55,8 @@ export async function POST(request, { params }) {
     acceptsWhatsapp: form.get("acceptsWhatsapp") === "true",
     oneClick: form.get("oneClick") === "1",
     fulfillment: form.get("fulfillment") === "pickup" ? "pickup" : "delivery",
+    // Local delivery slot ("YYYY-MM-DD|HH:MM-HH:MM"); the server checks it.
+    deliverySlot: form.get("deliverySlot") || undefined,
     // The popup's "number confirmed" ticket (HttpOnly cookie): the order
     // links the number to its shopper and signs them in.
     ...(form.get("oneClick") === "1" && cookieStore.get(PHONE_TICKET_COOKIE)?.value && { phoneTicket: cookieStore.get(PHONE_TICKET_COOKIE).value }),
