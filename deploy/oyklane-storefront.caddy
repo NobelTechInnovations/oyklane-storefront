@@ -1,0 +1,16 @@
+# Copied to ~/apps/proxy/sites/ on the server. Every store address that
+# isn't one of the platform's own names: {handle}.oyklane.com and sellers'
+# connected domains. Their certificates are issued on the first visit, once
+# the storefront confirms the name is a store (on_demand_tls "ask" in the
+# proxy's Caddyfile → /tls-check). DNS: *.oyklane.com and sellers' domains
+# point at the server's static IP.
+https:// {
+	tls {
+		on_demand
+	}
+	encode gzip
+	reverse_proxy oyklane-storefront:3000
+}
+http:// {
+	redir https://{host}{uri} permanent
+}
