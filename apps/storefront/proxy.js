@@ -59,6 +59,8 @@ function rewrite(request, handle, suffix) {
 
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
+  // The HTTPS proxy's certificate check (app/tls-check) isn't a store page.
+  if (pathname === "/tls-check") return NextResponse.next();
   if (pathname.startsWith("/store/")) {
     // /store/{handle}/de/… (the platform address): same as on a domain.
     const m = pathname.match(/^\/store\/([^/]+)(\/.*)?$/);

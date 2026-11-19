@@ -1,0 +1,22 @@
+# Storefront on the AWS server: *.oyklane.com and sellers' own domains.
+# HTTPS comes from the shared proxy (~/apps/proxy), which reaches it as
+# "oyklane-storefront" on the "web" network.
+# Run from the repo root:  docker compose -f deploy/docker-compose.prod.yml up -d --build
+name: oyklane-storefront
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        API_INTERNAL_URL: https://api.oyklane.com
+        STOREFRONT_ROOT_DOMAIN: oyklane.com
+    env_file: ../.env           # shared secrets copied from the API's .env by the setup script (never committed)
+    environment:
+      API_INTERNAL_URL: https://api.oyklane.com
+      STOREFRONT_ROOT_DOMAIN: oyklane.com
+    restart: unless-stopped
+    networks:
+      web: { aliases: [oyklane-storefront] }
+networks:
+  web: { external: true }

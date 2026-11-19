@@ -1,0 +1,6 @@
+# Copied to ~/apps/proxy/sites/ on the server. Point uat-shop.oyklane.com's
+# A record at the server's static IP; the certificate is automatic.
+uat-shop.oyklane.com {
+	encode gzip
+	reverse_proxy oyklane-storefront-uat:3000
+}

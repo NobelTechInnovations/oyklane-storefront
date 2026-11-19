@@ -1,0 +1,24 @@
+# Storefront (UAT, branch uat) on the AWS server: uat-shop.oyklane.com.
+# HTTPS comes from the shared proxy (~/apps/proxy), which reaches it as
+# "oyklane-storefront-uat" on the "web" network.
+# Run from the repo root:  docker compose -f deploy/docker-compose.uat.yml up -d --build
+name: oyklane-storefront-uat
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        API_INTERNAL_URL: https://uat-api.oyklane.com
+        STOREFRONT_ROOT_DOMAIN: oyklane.com
+        STOREFRONT_PLATFORM_HOSTS: uat-shop.oyklane.com
+    env_file: ../.env           # shared secrets copied from the API's .env by the setup script (never committed)
+    environment:
+      API_INTERNAL_URL: https://uat-api.oyklane.com
+      STOREFRONT_ROOT_DOMAIN: oyklane.com
+      STOREFRONT_PLATFORM_HOSTS: uat-shop.oyklane.com
+    restart: unless-stopped
+    networks:
+      web: { aliases: [oyklane-storefront-uat] }
+networks:
+  web: { external: true }
