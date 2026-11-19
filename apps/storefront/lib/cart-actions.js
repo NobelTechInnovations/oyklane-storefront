@@ -103,7 +103,8 @@ export async function mutateCart(handle, endpoint, request) {
 
   const res = await apiFetch(`${API_URL}/api/storefront/${handle}/cart/${endpoint}`, {
     method: "POST",
-    headers: { "content-type": "application/json", ...moneyHeaders(request, cookieStore) },
+    // The signed-in shopper: a business buyer's prices follow them (B2B).
+    headers: { "content-type": "application/json", ...moneyHeaders(request, cookieStore), ...(cookieStore.get("sc_customer")?.value && { "x-shopper-token": cookieStore.get("sc_customer").value }) },
     // The visit, so Siyaa knows whose cart this is (add_to_cart events).
     body: JSON.stringify({ cartId, variantId: variantId || undefined, quantity, visitorId: cookieStore.get(VISITOR_COOKIE)?.value || undefined, ...extra }),
   });

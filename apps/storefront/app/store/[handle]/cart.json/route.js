@@ -11,7 +11,7 @@ export async function GET(request, { params }) {
   const cartId = cookieStore.get(CART_COOKIE)?.value;
   if (!cartId) return NextResponse.json({ cart: { items: [], item_count: 0, subtotal: 0, total: 0 } }, { headers: { "cache-control": "no-store" } });
   try {
-    const res = await apiFetch(`${API_URL}/api/storefront/${handle}/cart?cartId=${encodeURIComponent(cartId)}`, { cache: "no-store", headers: moneyHeaders(request, cookieStore) });
+    const res = await apiFetch(`${API_URL}/api/storefront/${handle}/cart?cartId=${encodeURIComponent(cartId)}`, { cache: "no-store", headers: { ...moneyHeaders(request, cookieStore), ...(cookieStore.get("sc_customer")?.value && { "x-shopper-token": cookieStore.get("sc_customer").value }) } });
     const body = await res.json();
     if (!res.ok) return NextResponse.json({ error: body.error || "Cart unavailable" }, { status: res.status });
     return NextResponse.json({ cart: publicCart(body.cart, request, handle) }, { headers: { "cache-control": "no-store" } });
