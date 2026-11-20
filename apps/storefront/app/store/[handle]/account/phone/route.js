@@ -13,6 +13,9 @@ import {
   OYKLANE_ID_COOKIE,
   oyklaneSignIn,
   clearOyklaneId,
+  rememberedPeek,
+  rememberedSignIn,
+  setKeepCookie,
 } from "@/lib/shopper";
 
 /**
@@ -49,9 +52,10 @@ export async function POST(request, { params }) {
     /* ignore */
   }
   const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-  const done = (token, idToken) => {
+  const done = (token, idToken, deviceToken) => {
     const response = NextResponse.json({ done: true });
     setShopperCookie(response, request, handle, token, idToken);
+    if (deviceToken) setKeepCookie(response, request, handle, deviceToken);
     for (const name of STEP_COOKIES) clearCookie(response, request, handle, name);
     return response;
   };
@@ -59,12 +63,17 @@ export async function POST(request, { params }) {
   // Signed in on another *.oyklane.com store: its Oyklane account cookie is
   // shared, so offer "Continue as …" (masked number) and sign in on a click.
   if (body.action === "known") {
+    // Saved login on this device first ("Continue as …", no code).
+    const saved = await rememberedPeek(handle).catch(() => null);
+    if (saved) return NextResponse.json({ known: { name: saved.name || "", phone: saved.phone || saved.email || "", saved: true } });
     const idToken = jar.get(OYKLANE_ID_COOKIE)?.value;
     if (!idToken) return NextResponse.json({ known: null });
     const res = await apiPost(handle, "/account/oyklane/peek", { idToken });
     return NextResponse.json({ known: res.ok && res.data?.known ? { name: res.data.name || "", phone: res.data.phone || "" } : null });
   }
   if (body.action === "continue") {
+    const saved = await rememberedSignIn(handle).catch(() => null);
+    if (saved?.token) return done(saved.token, saved.oyklaneId, saved.deviceToken);
     const result = await oyklaneSignIn(request, handle, { create: true });
     if (result?.token) return done(result.token);
     const response = fail("Please sign in with your number.");
@@ -85,6 +94,9 @@ export async function POST(request, { params }) {
       return fail("Too many codes requested from this device. Try again in a few minutes.", 429);
     }
     const channel = ["sms", "whatsapp"].includes(body.channel) ? body.channel : undefined;
+    // The number this device saved its login for: signed in, no code. Another number: a code as usual.
+    const saved = await rememberedSignIn(handle, { phone: str(body.phone, 24) }).catch(() => null);
+    if (saved?.token) return done(saved.token, saved.oyklaneId, saved.deviceToken);
     const res = await apiPost(handle, "/account/phone/code", { phone: str(body.phone, 24), ...(channel && { channel }) });
     if (!res.ok) return fail(res.data?.error || "Enter a valid mobile number.", res.status);
     const response = NextResponse.json({ phone: res.data.phone, channel: res.data.channel });
@@ -110,6 +122,8 @@ export async function POST(request, { params }) {
     }
     const email = str(body.email, 200).toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Enter a valid email.");
+    const savedEmail = await rememberedSignIn(handle, { email }).catch(() => null);
+    if (savedEmail?.token) return done(savedEmail.token, savedEmail.oyklaneId, savedEmail.deviceToken);
     const res = await apiPost(handle, "/account/code", { email });
     if (!res.ok) return fail(res.data?.error || "We couldn't email a code. Try again.", res.status);
     const response = NextResponse.json({ email });

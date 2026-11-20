@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_URL, apiFetch } from "./api-url";
 import { storefrontPath, isDomainRequest, ROOT_DOMAIN } from "./domain";
+import { publicUrl } from "@/lib/origin";
 
 /**
  * Shopper sessions on the storefront. The session token (minted by the API
@@ -133,7 +134,7 @@ export function clearCookie(response, request, handle, name) {
 /** A 303 redirect to a storefront path (see storefrontPath), with optional
  * query params — the POST/redirect/GET pattern every form here uses. */
 export function redirectTo(request, handle, suffix, params = {}) {
-  const target = new URL(storefrontPath(request.headers.get("host"), handle, suffix), request.url);
+  const target = publicUrl(request, storefrontPath(request.headers.get("host"), handle, suffix));
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== "") target.searchParams.set(k, String(v));
   return NextResponse.redirect(target, { status: 303 });
 }
@@ -196,3 +197,31 @@ export function visitorAllowed(request, key, { max, windowMs }) {
   entry.count += 1;
   return entry.count <= max;
 }
+
+// "Save my login" (API remember/service.js): this store remembers the
+// shopper on this device; the same number or email signs in without a code.
+export const KEEP_COOKIE = "oy_keep";
+const KEEP_MAX_AGE = 60 * 24 * 60 * 60;
+
+export function setKeepCookie(response, request, handle, deviceToken) {
+  if (deviceToken) response.cookies.set(KEEP_COOKIE, deviceToken, cookieOptions(request, handle, KEEP_MAX_AGE));
+}
+
+/** Sign in from this device's saved login: { token, deviceToken } | { mismatch } | null. */
+export async function rememberedSignIn(handle, { phone, email } = {}) {
+  const deviceToken = (await cookies()).get(KEEP_COOKIE)?.value;
+  if (!deviceToken) return null;
+  const res = await apiPost(handle, "/account/remembered", { deviceToken, ...(phone && { phone }), ...(email && { email }) });
+  if (!res.ok) return null;
+  if (res.data?.mismatch) return { mismatch: true };
+  return res.data?.token ? res.data : null;
+}
+
+/** Who this device remembers here, for "Continue as …" (or null). */
+export async function rememberedPeek(handle) {
+  const deviceToken = (await cookies()).get(KEEP_COOKIE)?.value;
+  if (!deviceToken) return null;
+  const res = await apiPost(handle, "/account/remembered/peek", { deviceToken });
+  return res.ok && res.data?.known ? res.data.known : null;
+}
+

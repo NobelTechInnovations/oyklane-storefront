@@ -3,6 +3,7 @@ import { API_URL } from "@/lib/render";
 import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 import { storeBase, gatewayHandoff } from "@/lib/payments";
+import { publicUrl } from "@/lib/origin";
 
 /**
  * Partial payment: "Pay the balance online" on the order page. The API works
@@ -14,7 +15,7 @@ export async function POST(request, { params }) {
   const host = request.headers.get("host");
   const orderPath = storefrontPath(host, handle, `/orders/${token}`);
   const back = (message) => {
-    const target = new URL(orderPath, request.url);
+    const target = publicUrl(request, orderPath);
     if (message) target.searchParams.set("formError", message);
     return NextResponse.redirect(target, { status: 303 });
   };
@@ -37,7 +38,7 @@ export async function POST(request, { params }) {
 
   const { order, payment, razorpay } = result;
   if (razorpay) {
-    const target = new URL(storefrontPath(host, handle, "/checkout/pay"), request.url);
+    const target = publicUrl(request, storefrontPath(host, handle, "/checkout/pay"));
     target.searchParams.set("order", order.id);
     target.searchParams.set("rzpOrderId", razorpay.orderId);
     target.searchParams.set("amount", String(razorpay.amount));

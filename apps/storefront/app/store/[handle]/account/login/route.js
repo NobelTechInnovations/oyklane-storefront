@@ -20,6 +20,8 @@ import {
   applyOyklane,
   userNavigated,
   OYKLANE_WELCOME,
+  rememberedSignIn,
+  setKeepCookie,
 } from "@/lib/shopper";
 
 /**
@@ -92,6 +94,16 @@ async function phonePOST(request, handle, intent, form) {
     const number = intent === "phone-resend" ? phone : String(form.get("phone") || "").trim();
     const channel = intent === "phone-resend" ? jar.get(PHONE_CHANNEL_COOKIE)?.value : String(form.get("channel") || "");
     if (!number) return back("", { formError: "Your sign-in timed out. Enter your number again." });
+    // The number this device saved its login for: signed in, no code.
+    if (intent === "phone-request") {
+      const saved = await rememberedSignIn(handle, { phone: number }).catch(() => null);
+      if (saved?.token) {
+        const returnTo = String(form.get("return_to") || "");
+        const response = signedInResponse(request, handle, saved.token, RETURN_TARGETS[returnTo], saved.oyklaneId);
+        setKeepCookie(response, request, handle, saved.deviceToken);
+        return response;
+      }
+    }
     const res = await apiPost(handle, "/account/phone/code", { phone: number, ...(channel && { channel }) });
     if (!res.ok) return back(intent === "phone-resend" ? "phone-code" : "", { formError: res.data?.error || "Enter a valid mobile number." });
     const response = back("phone-code", intent === "phone-resend" ? { notice: "A new code is on its way." } : {});

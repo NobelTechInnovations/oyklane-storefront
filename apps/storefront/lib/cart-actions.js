@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { API_URL, CART_COOKIE, VISITOR_COOKIE, moneyHeaders } from "./render";
 import { apiFetch } from "./api-url";
 import { storefrontPath } from "./domain";
+import { publicUrl } from "@/lib/origin";
 
 const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
@@ -135,7 +136,7 @@ export async function mutateCart(handle, endpoint, request) {
     return NextResponse.redirect(back, { status: 303 });
   }
   const redirectPath = storefrontPath(request.headers.get("host"), handle, "/cart");
-  const response = NextResponse.redirect(new URL(redirectPath, request.url), { status: 303 });
+  const response = NextResponse.redirect(publicUrl(request, redirectPath), { status: 303 });
   if (cart?.cartId) {
     response.cookies.set(CART_COOKIE, cart.cartId, {
       path: "/",
@@ -184,7 +185,7 @@ async function mutateCartCode(handle, endpoint, request, errorParam, fallbackErr
     return response;
   }
 
-  const target = new URL(storefrontPath(request.headers.get("host"), handle, back), request.url);
+  const target = publicUrl(request, storefrontPath(request.headers.get("host"), handle, back));
   if (!res.ok) target.searchParams.set(errorParam, body?.error || fallbackError);
 
   const response = NextResponse.redirect(target, { status: 303 });

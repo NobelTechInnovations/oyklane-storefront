@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 import { shopperToken, setShopperCookie, clearCookie, PHONE_TICKET_COOKIE } from "@/lib/shopper";
 import { storeBase, gatewayHandoff, safeReturnPath, retryUrl, ONE_CLICK_RETURN_COOKIE } from "@/lib/payments";
+import { publicUrl } from "@/lib/origin";
 
 export async function GET(request, { params }) {
   const { handle } = await params;
@@ -40,6 +41,8 @@ export async function POST(request, { params }) {
     lang: /^[a-z]{2}$/.test(request.headers.get("x-oy-lang") || "") ? request.headers.get("x-oy-lang") : undefined,
     gstin: form.get("gstin") || undefined,
     note: form.get("note") || undefined,
+    // Extra checkout fields (Settings ▸ Checkout ▸ Extra fields): inputs named attr.<key>.
+    attributes: Object.fromEntries([...form.entries()].filter(([k, v]) => k.startsWith("attr.") && typeof v === "string").map(([k, v]) => [k.slice(5, 45), v.slice(0, 500)])),
     shippingName: form.get("shippingName"),
     shippingAddress1: form.get("shippingAddress1"),
     shippingAddress2: form.get("shippingAddress2") || undefined,
@@ -88,7 +91,7 @@ export async function POST(request, { params }) {
   if (!res.ok) {
     const message = result?.error || "Could not place your order. Please try again.";
     if (oneClickFrom) return NextResponse.redirect(retryUrl(request, oneClickFrom, message), { status: 303 });
-    const target = new URL(checkoutPath, request.url);
+    const target = publicUrl(request, checkoutPath);
     target.searchParams.set("checkoutError", message);
     return NextResponse.redirect(target, { status: 303 });
   }
@@ -121,7 +124,7 @@ export async function POST(request, { params }) {
 
   let target;
   if (razorpay) {
-    target = new URL(storefrontPath(host, handle, "/checkout/pay"), request.url);
+    target = publicUrl(request, storefrontPath(host, handle, "/checkout/pay"));
     target.searchParams.set("order", order.id);
     target.searchParams.set("rzpOrderId", razorpay.orderId);
     target.searchParams.set("amount", String(razorpay.amount));
@@ -131,7 +134,7 @@ export async function POST(request, { params }) {
     // Razorpay's window: the cart stays until the payment is verified.
     return remember(NextResponse.redirect(target, { status: 303 }));
   } else {
-    target = new URL(storefrontPath(host, handle, "/checkout/confirmation"), request.url);
+    target = publicUrl(request, storefrontPath(host, handle, "/checkout/confirmation"));
     target.searchParams.set("order", order.id);
   }
 

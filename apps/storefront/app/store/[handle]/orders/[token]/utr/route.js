@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { API_URL } from "@/lib/render";
 import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
+import { publicUrl } from "@/lib/origin";
 
 /**
  * "Already paid by UPI?" on the order page: after the store marked a UPI
@@ -13,7 +14,7 @@ export async function POST(request, { params }) {
   const host = request.headers.get("host");
   const orderPath = storefrontPath(host, handle, `/orders/${token}`);
   const back = (key, message) => {
-    const target = new URL(orderPath, request.url);
+    const target = publicUrl(request, orderPath);
     target.searchParams.set(key, message);
     return NextResponse.redirect(target, { status: 303 });
   };

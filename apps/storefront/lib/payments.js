@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { storefrontPath } from "./domain";
+import { publicOrigin, publicUrl } from "@/lib/origin";
 
 /** The store's base URL on the address the shopper is using right now —
  * {handle}.<root>, its own domain, or /store/:handle in local dev. */
 export function storeBase(request, handle) {
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  const proto = (request.headers.get("x-forwarded-proto") || new URL(request.url).protocol.replace(":", "")).split(",")[0];
+  const proto = new URL(publicOrigin(request)).protocol.replace(":", "");
   return `${proto}://${host}${storefrontPath(host, handle, "")}`.replace(/\/+$/, "");
 }
 
@@ -25,7 +26,7 @@ export function safeReturnPath(value) {
 /** The page to send a shopper back to after a payment didn't finish:
  * `path` with the One-Click popup asked to reopen and say why. */
 export function retryUrl(request, path, message) {
-  const url = new URL(path, request.url);
+  const url = publicUrl(request, path);
   url.searchParams.set("oyCheckout", "retry");
   if (message) url.searchParams.set("oyError", message.slice(0, 200));
   return url;

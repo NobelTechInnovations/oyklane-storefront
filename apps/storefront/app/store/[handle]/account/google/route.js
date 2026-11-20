@@ -4,6 +4,7 @@ import { API_URL } from "@/lib/render";
 import { normalizeApiUrl } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 import { GOOGLE_NONCE_COOKIE, RETURN_TARGETS, cookieOptions } from "@/lib/shopper";
+import { publicOrigin } from "@/lib/origin";
 
 /**
  * "Continue with Google": sends the shopper to the API's Google sign-in
@@ -16,7 +17,7 @@ const PUBLIC_API = process.env.API_PUBLIC_URL || process.env.NEXT_PUBLIC_API_URL
 export async function GET(request, { params }) {
   const { handle } = await params;
   const path = storefrontPath(request.headers.get("host"), handle, "");
-  const base = `${new URL(request.url).origin}${path === "/" ? "" : path}`;
+  const base = `${publicOrigin(request)}${path === "/" ? "" : path}`;
   const nonce = crypto.randomBytes(24).toString("base64url");
   const returnTo = request.nextUrl.searchParams.get("return_to");
 

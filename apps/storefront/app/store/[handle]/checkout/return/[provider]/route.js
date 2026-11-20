@@ -5,6 +5,7 @@ import { API_URL, CART_COOKIE } from "@/lib/render";
 import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
 import { retryUrl, safeReturnPath, ONE_CLICK_RETURN_COOKIE } from "@/lib/payments";
+import { publicUrl } from "@/lib/origin";
 
 /**
  * Where a payment gateway sends the shopper back (GET from Stripe, PayPal
@@ -50,7 +51,7 @@ export async function GET(request, { params }) {
   const host = request.headers.get("host");
 
   if (result?.paid) {
-    const url = new URL(storefrontPath(host, handle, "/checkout/confirmation"), request.url);
+    const url = publicUrl(request, storefrontPath(host, handle, "/checkout/confirmation"));
     url.searchParams.set("order", orderId);
     const response = NextResponse.redirect(url, { status: 303 });
     await finishCart(response);
@@ -64,7 +65,7 @@ export async function GET(request, { params }) {
     : said || result?.message || "Your payment wasn't completed. Try again, or choose another way to pay.";
   const oneClickFrom = safeReturnPath(jar.get(ONE_CLICK_RETURN_COOKIE)?.value);
   if (oneClickFrom) return NextResponse.redirect(retryUrl(request, oneClickFrom, message), { status: 303 });
-  const url = new URL(storefrontPath(host, handle, "/checkout"), request.url);
+  const url = publicUrl(request, storefrontPath(host, handle, "/checkout"));
   url.searchParams.set("checkoutError", message);
   return NextResponse.redirect(url, { status: 303 });
 }
@@ -79,11 +80,11 @@ export async function POST(request, { params }) {
   const result = await confirm(handle, provider, orderId, { ...Object.fromEntries(sp.entries()), ...posted });
 
   // Finish on a same-site GET, which carries the shopper's cookies.
-  const next = new URL(request.url);
+  const next = publicUrl(request, new URL(request.url).pathname + new URL(request.url).search);
   next.search = "";
   next.searchParams.set("order", orderId);
   next.searchParams.set("after", "1");
   if (sp.get("cancelled") === "1") next.searchParams.set("cancelled", "1");
   if (!result?.paid && result?.message) next.searchParams.set("msg", String(result.message).slice(0, 200));
-  return NextResponse.redirect(new URL(storefrontPath(request.headers.get("host"), handle, `/checkout/return/${provider}`) + next.search, request.url), { status: 303 });
+  return NextResponse.redirect(publicUrl(request, storefrontPath(request.headers.get("host"), handle, `/checkout/return/${provider}`) + next.search), { status: 303 });
 }

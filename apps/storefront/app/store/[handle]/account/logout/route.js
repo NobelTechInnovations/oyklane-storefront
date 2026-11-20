@@ -1,4 +1,5 @@
-import { SHOPPER_COOKIE, PHONE_TICKET_COOKIE, clearCookie, clearOyklaneId, redirectTo } from "@/lib/shopper";
+import { cookies } from "next/headers";
+import { SHOPPER_COOKIE, PHONE_TICKET_COOKIE, KEEP_COOKIE, apiPost, clearCookie, clearOyklaneId, redirectTo, setKeepCookie, shopperToken } from "@/lib/shopper";
 import { CART_COOKIE } from "@/lib/render";
 import { ONE_CLICK_RETURN_COOKIE } from "@/lib/payments";
 
@@ -9,7 +10,26 @@ import { ONE_CLICK_RETURN_COOKIE } from "@/lib/payments";
  * an image on another site can't sign anyone out. */
 export async function POST(request, { params }) {
   const { handle } = await params;
-  const response = redirectTo(request, handle, "/", { signedOut: "1" });
+  let form = null;
+  try {
+    form = await request.formData();
+  } catch {
+    /* no form */
+  }
+  // "Save my login on this device?" — yes keeps a saved login here (the
+  // same number signs in without a code next time); no forgets any.
+  const remember = form?.get("remember") === "1";
+  const token = await shopperToken();
+  const kept = (await cookies()).get(KEEP_COOKIE)?.value;
+  let deviceToken = null;
+  if (remember && token) {
+    const res = await apiPost(handle, "/account/remember", { track: form?.get("track") === "1" }, { token });
+    if (res.ok) deviceToken = res.data?.deviceToken || null;
+  }
+  if (kept && (!remember || deviceToken)) await apiPost(handle, "/account/remembered/forget", { deviceToken: kept }).catch(() => {});
+  const response = redirectTo(request, handle, "/", { signedOut: "1", ...(deviceToken && { saved: "1" }) });
+  if (deviceToken) setKeepCookie(response, request, handle, deviceToken);
+  else if (kept) clearCookie(response, request, handle, KEEP_COOKIE);
   clearCookie(response, request, handle, SHOPPER_COOKIE);
   clearCookie(response, request, handle, PHONE_TICKET_COOKIE);
   clearOyklaneId(response, request);

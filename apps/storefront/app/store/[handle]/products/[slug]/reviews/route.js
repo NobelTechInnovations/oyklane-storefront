@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { API_URL, apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
+import { publicUrl } from "@/lib/origin";
 
 /** More reviews for the product page (View more / loading on scroll),
  * 5 at a time, as JSON. */
@@ -41,7 +42,7 @@ export async function POST(request, { params }) {
   } catch {
     message = "Couldn't send your review. Try again.";
   }
-  const target = new URL(storefrontPath(request.headers.get("host"), handle, `/products/${slug}`), request.url);
+  const target = publicUrl(request, storefrontPath(request.headers.get("host"), handle, `/products/${slug}`));
   target.searchParams.set(ok ? "notice" : "formError", message);
   target.hash = "reviews";
   return NextResponse.redirect(target, { status: 303 });

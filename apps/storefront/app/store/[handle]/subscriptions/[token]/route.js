@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { proxyRender, API_URL } from "@/lib/render";
 import { apiFetch } from "@/lib/api-url";
 import { storefrontPath } from "@/lib/domain";
+import { publicUrl } from "@/lib/origin";
 
 /** A shopper's subscription (the link in every subscription email): what
  * comes next, and skip, pause, resume, change or cancel. The unguessable
@@ -26,7 +27,7 @@ export async function POST(request, { params }) {
   const { handle, token } = await params;
   const host = request.headers.get("host");
   const back = (key, message) => {
-    const target = new URL(storefrontPath(host, handle, `/subscriptions/${token}`), request.url);
+    const target = publicUrl(request, storefrontPath(host, handle, `/subscriptions/${token}`));
     target.searchParams.set(key, message);
     return NextResponse.redirect(target, { status: 303 });
   };
