@@ -1,5 +1,5 @@
 import { proxyRender } from "@/lib/render";
-import { shopperToken, redirectTo, oyklaneSignIn, applyOyklane, userNavigated, OYKLANE_WELCOME } from "@/lib/shopper";
+import { shopperToken, redirectTo, oyklaneSignIn, applyOyklane, OYKLANE_WELCOME } from "@/lib/shopper";
 
 /** The shopper's account page — orders and saved details. Signed-out
  * visitors go to sign in first — unless they're signed in to another
@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
   const sp = request.nextUrl.searchParams;
   let oyklane;
   if (!(await shopperToken())) {
-    oyklane = await oyklaneSignIn(request, handle, { create: userNavigated(request) });
+    oyklane = await oyklaneSignIn(request, handle, { create: false });
     if (!oyklane?.token) return applyOyklane(redirectTo(request, handle, "/account/login"), request, handle, oyklane);
   }
   const notice = sp.get("notice") || (oyklane?.created ? OYKLANE_WELCOME : "");

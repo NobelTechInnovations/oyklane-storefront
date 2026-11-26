@@ -18,7 +18,6 @@ import {
   PHONE_PROFILE_COOKIE,
   oyklaneSignIn,
   applyOyklane,
-  userNavigated,
   OYKLANE_WELCOME,
   rememberedSignIn,
   setKeepCookie,
@@ -155,7 +154,7 @@ export async function GET(request, { params }) {
   const { handle } = await params;
   const sp = request.nextUrl.searchParams;
   // Already signed in to another Oyklane store: in, without a form.
-  const oyklane = await oyklaneSignIn(request, handle, { create: userNavigated(request) });
+  const oyklane = await oyklaneSignIn(request, handle, { create: false });
   if (oyklane?.token) {
     const target = RETURN_TARGETS[sp.get("return_to")];
     return applyOyklane(redirectTo(request, handle, target || "/account", !target && oyklane.created ? { notice: OYKLANE_WELCOME } : {}), request, handle, oyklane);

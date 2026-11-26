@@ -11,8 +11,6 @@ import {
   PHONE_TICKET_COOKIE,
   PHONE_PROFILE_COOKIE,
   OYKLANE_ID_COOKIE,
-  oyklaneSignIn,
-  clearOyklaneId,
   rememberedPeek,
   rememberedSignIn,
   setKeepCookie,
@@ -60,25 +58,19 @@ export async function POST(request, { params }) {
     return response;
   };
 
-  // Signed in on another *.oyklane.com store: its Oyklane account cookie is
-  // shared, so offer "Continue as …" (masked number) and sign in on a click.
+  // "Continue as …" for a login saved on THIS store (this device). A login
+  // from another Oyklane store is only a yes/no here: who they are, and the
+  // sign-in, go through Oyklane's own one-tap window, where the shopper
+  // confirms — this page's scripts (the merchant's theme) never see either.
   if (body.action === "known") {
-    // Saved login on this device first ("Continue as …", no code).
     const saved = await rememberedPeek(handle).catch(() => null);
     if (saved) return NextResponse.json({ known: { name: saved.name || "", phone: saved.phone || saved.email || "", saved: true } });
-    const idToken = jar.get(OYKLANE_ID_COOKIE)?.value;
-    if (!idToken) return NextResponse.json({ known: null });
-    const res = await apiPost(handle, "/account/oyklane/peek", { idToken });
-    return NextResponse.json({ known: res.ok && res.data?.known ? { name: res.data.name || "", phone: res.data.phone || "" } : null });
+    return NextResponse.json({ known: null, oyklane: Boolean(jar.get(OYKLANE_ID_COOKIE)?.value) });
   }
   if (body.action === "continue") {
     const saved = await rememberedSignIn(handle).catch(() => null);
     if (saved?.token) return done(saved.token, saved.oyklaneId, saved.deviceToken);
-    const result = await oyklaneSignIn(request, handle, { create: true });
-    if (result?.token) return done(result.token);
-    const response = fail("Please sign in with your number.");
-    if (result?.clear) clearOyklaneId(response, request);
-    return response;
+    return fail("Please sign in with your number.");
   }
 
   // One-tap sign-in: a one-time code from Oyklane's sign-in (another store,

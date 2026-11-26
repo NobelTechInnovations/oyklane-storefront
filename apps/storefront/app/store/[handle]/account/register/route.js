@@ -8,7 +8,6 @@ import {
   shopperToken,
   oyklaneSignIn,
   applyOyklane,
-  userNavigated,
   OYKLANE_WELCOME,
   signedInResponse,
   visitorAllowed,
@@ -21,7 +20,7 @@ export async function GET(request, { params }) {
   const { handle } = await params;
   if (await shopperToken()) return redirectTo(request, handle, "/account");
   // Already signed in to another Oyklane store: no need to sign up.
-  const oyklane = await oyklaneSignIn(request, handle, { create: userNavigated(request) });
+  const oyklane = await oyklaneSignIn(request, handle, { create: false });
   if (oyklane?.token) return applyOyklane(redirectTo(request, handle, "/account", oyklane.created ? { notice: OYKLANE_WELCOME } : {}), request, handle, oyklane);
   const sp = request.nextUrl.searchParams;
   const returnTo = RETURN_TARGETS[sp.get("return_to")] ? sp.get("return_to") : "";
